@@ -14,6 +14,6 @@ We can reduce the problem to drawing a rasterized line to an N-dimensional "imag
 Both problems can be solved using a general algorithm. The core difficulty is drawing a rasterized line in N-dimensional space. This library aims to provide these abstract general solutions. Note that making the connection can be tricky. Usually, I recognize it halfway while solving new problems from scratch.
 
 ## Disclaimer.
-Right now, this library serves for my personal use. I mostly wanted to go through the process of publishing a crate and make the features easily available in other projects when I need them. The library is not documented and the API might not be user-friendly.
+Right now, this library serves for my personal use. I mostly wanted to go through the process of publishing a crate and make the features easily available in other projects when I need them. The library is a work in progress, not documented and the API might not be user-friendly.
 
 I would be very happy for anyone to try it though, just have the understanding not much thought went into making it intuitive as of now. Feel free to ping me, open issues or contribute. It would be super cool if someone found it useful!
