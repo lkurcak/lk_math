@@ -1,7 +1,35 @@
-
 pub trait Zero {
     fn zero() -> Self;
 }
+
+pub trait One {
+    fn one() -> Self;
+}
+
+macro_rules! zero {
+    ($($t:ty),*) => {
+        $(
+        impl Zero for $t {
+    fn zero() -> Self {
+        0 as $t
+    }
+        })*
+    };
+}
+
+macro_rules! one {
+    ($($t:ty),*) => {
+        $(
+        impl One for $t {
+    fn one() -> Self {
+        1 as $t
+    }
+        })*
+    };
+}
+
+zero!(isize, i8, i16, i32, i64, i128, usize, u8, u16, u32, u64, u128, f32, f64);
+one!(isize, i8, i16, i32, i64, i128, usize, u8, u16, u32, u64, u128, f32, f64);
 
 pub trait Gcd {
     fn gcd(a: Self, b: Self) -> Self;
@@ -78,80 +106,6 @@ pub trait ExclusiveMax<T> {
     fn exclusive_max(&self) -> &T;
 }
 
-pub trait Interval
-where
-    Self: Sized,
-{
-    fn interval_intersection(&self, other: &Self) -> Option<Self>;
-    fn interval_union(&self, other: &Self) -> Option<Self>;
-}
-
-// impl<T> InclusiveIntervalOverlap for T
-// where
-//     T: PartialOrd,
-//     Self: InclusiveMin<T> + InclusiveMax<T>,
-// {
-//     fn inclusive_interval_overlap_test(&self, other: &Self) -> bool {
-//         // a1 >= b0 && a0 <= b1
-//         self.inclusive_max() >= other.inclusive_min()
-//             && self.inclusive_min() <= other.inclusive_max()
-//     }
-//
-//     fn inclusive_interval_union(&self, other: &Self) -> Self {
-//         todo!()
-//     }
-// }
-
-impl<T> InclusiveMin<T> for std::ops::Range<T> {
-    fn inclusive_min(&self) -> &T {
-        &self.start
-    }
-}
-impl<T> ExclusiveMax<T> for std::ops::Range<T> {
-    fn exclusive_max(&self) -> &T {
-        &self.end
-    }
-}
-impl<T: Copy + Ord> Interval for std::ops::Range<T> {
-    fn interval_intersection(&self, other: &Self) -> Option<Self> {
-        let mut a0 = *self.inclusive_min();
-        let mut a1 = *self.exclusive_max();
-        let mut b0 = *other.inclusive_min();
-        let mut b1 = *other.exclusive_max();
-
-        if a0 > b0 {
-            std::mem::swap(&mut a0, &mut b0);
-            std::mem::swap(&mut a1, &mut b1);
-        }
-
-        // NOTE(lubo): Current policy is to return None
-        // a1 < b0 to get Some(a..a)
-        // a1 <= b0 to get None
-        if a1 <= b0 {
-            None
-        } else {
-            Some(b0..std::cmp::min(a1, b1))
-        }
-    }
-
-    fn interval_union(&self, other: &Self) -> Option<Self> {
-        let mut a0 = *self.inclusive_min();
-        let mut a1 = *self.exclusive_max();
-        let mut b0 = *other.inclusive_min();
-        let mut b1 = *other.exclusive_max();
-
-        if a0 > b0 {
-            std::mem::swap(&mut a0, &mut b0);
-            std::mem::swap(&mut a1, &mut b1);
-        }
-
-        if a1 < b0 {
-            None
-        } else {
-            Some(a0..std::cmp::max(a1, b1))
-        }
-    }
-}
 
 pub fn triangle_numbers(n: i32) -> i32 {
     // n * (n + 1) / 2
@@ -164,7 +118,7 @@ pub fn triangle_numbers(n: i32) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::Interval;
+    use crate::interval::Interval;
 
     #[test]
     fn interval_overlap_abab() {
