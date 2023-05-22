@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Sub},
 };
 
-use super::math::{ExclusiveMax, InclusiveMin, Interval};
+use super::interval::{ExclusiveMax, InclusiveMin, Interval};
 
 #[derive(Debug)]
 pub struct IntervalSet<T> {
@@ -14,79 +14,6 @@ impl<T: Copy + Ord> IntervalSet<T> {
     pub fn new() -> Self {
         Self { intervals: vec![] }
     }
-
-    // pub fn union_unordered(&mut self, interval: std::ops::Range<i32>) {
-    //     for (index, a) in self.intervals.iter().enumerate() {
-    //         if let Some(united) = a.interval_union(&interval) {
-    //             println!("United {:?} and {:?}", a, interval);
-    //             self.intervals.remove(index);
-    //             self.union(united);
-    //             return;
-    //         }
-    //     }
-    //     println!("Added new interval {:?}", interval);
-    //     self.intervals.push(interval);
-    // }
-
-    // pub fn bounds_unordered(&self) -> Option<std::ops::Range<i32>> {
-    //     if self.intervals.len() > 0 {
-    //         let min = *self
-    //             .intervals
-    //             .iter()
-    //             .map(|a| a.inclusive_min())
-    //             .min()
-    //             .unwrap();
-    //         let max = *self
-    //             .intervals
-    //             .iter()
-    //             .map(|a| a.exclusive_max())
-    //             .max()
-    //             .unwrap();
-    //         Some(min..max)
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    // pub fn intersect(&mut self, interval: std::ops::Range<i32>) {
-    //     if *interval.inclusive_min() >= *interval.exclusive_max() {
-    //         self.intervals.clear();
-    //         return;
-    //     }
-    //     if self.intervals.is_empty() {
-    //         return;
-    //     }
-    //     let index0 = match self
-    //         .intervals
-    //         .binary_search_by(|x| x.inclusive_min().cmp(interval.inclusive_min()))
-    //     {
-    //         Ok(value) => value,
-    //         Err(value) => value,
-    //     };
-    //     let index1 = match self
-    //         .intervals
-    //         .binary_search_by(|x| x.exclusive_max().cmp(interval.exclusive_max()))
-    //     {
-    //         Ok(value) => value,
-    //         Err(value) => value,
-    //     };
-    //     // NOTE(lubo): We are subregion of a single segment
-    //     if index0 > index1 {
-    //         self.intervals.clear();
-    //         self.intervals.push(interval);
-    //         return;
-    //     }
-    //     // NOTE(lubo): Remove segments that definitely fall outside interval
-    //     if index1 + 1 < self.intervals.len() {
-    //         self.intervals.drain(index1 + 1..);
-    //     }
-    //     if index0 > 1 {
-    //         self.intervals.drain(..index0 - 1);
-    //     }
-    //     let index1 = index1 - index0;
-    //     let index0 = 0;
-    //     todo!();
-    // }
 
     pub fn intersect(&mut self, interval: std::ops::Range<T>) {
         self.intervals = self

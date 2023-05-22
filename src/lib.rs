@@ -3,6 +3,7 @@ pub mod arraynd;
 pub mod cli;
 pub mod explore;
 pub mod geometric_traits;
+pub mod interval;
 pub mod interval_set;
 pub mod line;
 pub mod line_iterator;
