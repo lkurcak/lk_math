@@ -1,6 +1,6 @@
 [package]
 name = "lk_math"
-version = "0.2.0"
+version = "0.2.1-dev"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Tools for solving commonly occuring mathematical problems"
