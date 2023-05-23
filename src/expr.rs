@@ -16,6 +16,21 @@ pub enum Expression<T> {
     Free,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum EvalError {
+    CannotEvalFreeExpr,
+}
+
+impl std::fmt::Display for EvalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvalError::CannotEvalFreeExpr => writeln!(f, "EvalError::CannotEvalFreeExpr"),
+        }
+    }
+}
+
+impl std::error::Error for EvalError {}
+
 impl<T> Expression<T>
 where
     T: Add<Output = T>,
@@ -28,7 +43,7 @@ where
     T: From<bool>,
     T: Debug,
 {
-    pub fn eval(&self, vals: &HashMap<String, Expression<T>>) -> Result<T, ()> {
+    pub fn eval(&self, vals: &HashMap<String, Expression<T>>) -> Result<T, EvalError> {
         match self {
             Expression::Add(a, b) => Ok(a.eval(vals)? + b.eval(vals)?),
             Expression::Sub(a, b) => Ok(a.eval(vals)? - b.eval(vals)?),
@@ -37,7 +52,7 @@ where
             Expression::Eq(a, b) => Ok((a.eval(vals)? == b.eval(vals)?).into()),
             Expression::Ident(ident) => Ok(vals.get(ident).unwrap().eval(vals)?),
             Expression::Const(val) => Ok(*val),
-            Expression::Free => Err(()),
+            Expression::Free => Err(EvalError::CannotEvalFreeExpr),
         }
     }
 
@@ -168,7 +183,7 @@ impl<T> Expression<T>
 where
     T: FromStr,
 {
-    pub fn from_str_custom(s: &str) -> Self {
+    fn from_str_custom(s: &str) -> Self {
         let s = s.trim();
 
         if let Some(i) = s.find('=') {
