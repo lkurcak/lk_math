@@ -1,8 +1,6 @@
 # lk_math
 Tools for solving commonly occuring mathematical problems.
 
-`SPDX-License-Identifier: MIT OR Apache-2.0`
-
 ## Rationale.
 After having worked on various problems, I've found some share an underlying core difficulty.
 This crate aims to provide general solutions to these core problems.
@@ -39,4 +37,6 @@ I would be very happy for anyone to try this library, just have the understandin
 Feel free to ping me, open issues or contribute.
 It would be super cool if someone found it useful!
 
+
+`SPDX-License-Identifier: MIT OR Apache-2.0`
 

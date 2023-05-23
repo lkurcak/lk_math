@@ -162,47 +162,52 @@ where
             }
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Self {
+impl<T> Expression<T>
+where
+    T: FromStr,
+{
+    pub fn from_str_custom(s: &str) -> Self {
         let s = s.trim();
 
         if let Some(i) = s.find('=') {
             let split = s.split_at(i);
             return Self::Eq(
-                Box::new(Self::from_str(split.0)),
-                Box::new(Self::from_str(&split.1[1..])),
+                Box::new(Self::from_str_custom(split.0)),
+                Box::new(Self::from_str_custom(&split.1[1..])),
             );
         }
 
         if let Some(i) = s.find('+') {
             let split = s.split_at(i);
             return Self::Add(
-                Box::new(Self::from_str(split.0)),
-                Box::new(Self::from_str(&split.1[1..])),
+                Box::new(Self::from_str_custom(split.0)),
+                Box::new(Self::from_str_custom(&split.1[1..])),
             );
         }
 
         if let Some(i) = s.find('-') {
             let split = s.split_at(i);
             return Self::Sub(
-                Box::new(Self::from_str(split.0)),
-                Box::new(Self::from_str(&split.1[1..])),
+                Box::new(Self::from_str_custom(split.0)),
+                Box::new(Self::from_str_custom(&split.1[1..])),
             );
         }
 
         if let Some(i) = s.find('*') {
             let split = s.split_at(i);
             return Self::Mul(
-                Box::new(Self::from_str(split.0)),
-                Box::new(Self::from_str(&split.1[1..])),
+                Box::new(Self::from_str_custom(split.0)),
+                Box::new(Self::from_str_custom(&split.1[1..])),
             );
         }
 
         if let Some(i) = s.find('/') {
             let split = s.split_at(i);
             return Self::Div(
-                Box::new(Self::from_str(split.0)),
-                Box::new(Self::from_str(&split.1[1..])),
+                Box::new(Self::from_str_custom(split.0)),
+                Box::new(Self::from_str_custom(&split.1[1..])),
             );
         }
 
@@ -210,5 +215,13 @@ where
             Ok(val) => Self::Const(val),
             Err(_) => Self::Ident(s.to_string()),
         }
+    }
+}
+
+impl<T: Clone + FromStr> FromStr for Expression<T> {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from_str_custom(s))
     }
 }
