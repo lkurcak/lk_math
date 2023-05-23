@@ -98,6 +98,12 @@ impl<T: Copy + Ord> IntervalSet<T> {
     }
 }
 
+impl<T: Copy + Ord> Default for IntervalSet<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Copy + Add<Output = T> + Sub<Output = T> + Sum> IntervalSet<T> {
     pub fn measure(&self) -> T {
         self.intervals
