@@ -37,6 +37,23 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
             dim_strides,
         }
     }
+    pub fn from_vec<U: Copy + TryInto<usize>>(dims: [U; C], data: Vec<T>) -> Self {
+        let mut d = [0; C];
+        let mut current_stride = 1;
+        let mut dim_strides = [0; C];
+        for i in 0..C {
+            d[i] = dims[i].try_into().ok().unwrap();
+            dim_strides[i] = current_stride;
+            current_stride *= d[i];
+            assert_ne!(d[i], 0);
+        }
+
+        Self {
+            data,
+            dims: d,
+            dim_strides,
+        }
+    }
     pub fn resized(&self, new_dims: [usize; C], default: T, offset: Vector<C, i32>) -> Self {
         let mut new = Self::new(new_dims, default);
         new.data
