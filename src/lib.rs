@@ -7,6 +7,7 @@ pub mod expr;
 pub mod geometric_algebra;
 pub mod geometric_traits;
 pub mod group;
+pub mod group_presentation;
 pub mod interval;
 pub mod interval_set;
 pub mod line;
