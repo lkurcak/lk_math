@@ -1,8 +1,12 @@
 pub mod aabb;
 pub mod arraynd;
+pub mod bijection;
 pub mod cli;
 pub mod explore;
+pub mod expr;
+pub mod geometric_algebra;
 pub mod geometric_traits;
+pub mod group;
 pub mod interval;
 pub mod interval_set;
 pub mod line;
@@ -13,9 +17,7 @@ pub mod modular;
 pub mod sketch;
 pub mod transformations;
 pub mod vector;
-pub mod bijection;
-pub mod expr;
-pub mod geometric_algebra;
+pub mod permutations;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

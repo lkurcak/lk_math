@@ -37,6 +37,7 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
             dim_strides,
         }
     }
+
     pub fn from_slice<U: Copy + TryInto<usize>>(dims: [U; C], slice: &[T]) -> Self {
         let mut d = [0; C];
         let mut current_stride = 1;
@@ -279,20 +280,22 @@ impl<const N: usize, T: Copy> ArrayNd<N, T> {
 impl<const N: usize, T: Copy> ArrayNd<N, T> {
     // TODO(lubo): Block iterator!!
     pub fn iter_block(&mut self, mut matching: [Option<usize>; N]) -> impl Iterator<Item = &T> {
-        let mut index = 0;
-        for i in (0..N).rev() {
-            match matching[i] {
-                Some(value) => index += value * self.dim_strides[i],
-                None => {
-                    for a in 0..self.dims[i] {
-                        matching[i] = Some(a);
-                        // self.draw_block(matching, v);
-                    }
-                    return;
-                }
-            }
-        }
-        // self.set_linear(index, v)
+        todo!();
+        [].into_iter()
+        // let mut index = 0;
+        // for i in (0..N).rev() {
+        //     match matching[i] {
+        //         Some(value) => index += value * self.dim_strides[i],
+        //         None => {
+        //             for a in 0..self.dims[i] {
+        //                 matching[i] = Some(a);
+        //                 // self.draw_block(matching, v);
+        //             }
+        //             // return;
+        //         }
+        //     }
+        // }
+        // // self.set_linear(index, v)
     }
 
     pub fn draw_block(&mut self, mut matching: [Option<usize>; N], v: T) {
