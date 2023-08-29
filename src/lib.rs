@@ -7,7 +7,6 @@ pub mod expr;
 pub mod geometric_algebra;
 pub mod geometric_traits;
 pub mod group;
-pub mod group_presentation;
 pub mod interval;
 pub mod interval_set;
 pub mod line;
@@ -18,6 +17,7 @@ pub mod modular;
 pub mod sketch;
 pub mod transformations;
 pub mod vector;
+pub mod permutations;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
