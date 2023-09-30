@@ -37,7 +37,8 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
             dim_strides,
         }
     }
-    pub fn from_vec<U: Copy + TryInto<usize>>(dims: [U; C], data: Vec<T>) -> Self {
+
+    pub fn from_slice<U: Copy + TryInto<usize>>(dims: [U; C], slice: &[T]) -> Self {
         let mut d = [0; C];
         let mut current_stride = 1;
         let mut dim_strides = [0; C];
@@ -47,13 +48,13 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
             current_stride *= d[i];
             assert_ne!(d[i], 0);
         }
-
         Self {
-            data,
+            data: slice.to_owned(),
             dims: d,
             dim_strides,
         }
     }
+
     pub fn resized(&self, new_dims: [usize; C], default: T, offset: Vector<C, i32>) -> Self {
         let mut new = Self::new(new_dims, default);
         new.data
@@ -79,46 +80,6 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
         self.resized(new_dims, default, Vector::all(padding))
     }
 }
-
-// impl<const N: usize, T, I: Copy> LinearIndex<Vector<N, I>> for ArrayNd<N, T>
-// where
-//     Vector<N, I>: TryInto<Vector<N, usize>>,
-//     Vector<N, usize>: TryInto<Vector<N, I>>,
-// {
-//     fn index(&self, i: Vector<N, I>) -> Option<usize> {
-//         if self.is_in_bounds(i) {
-//             let i: Result<Vector<N, usize>, _> = i.try_into();
-//             if let Ok(i) = i {
-//                 let mut result = 0;
-//                 for j in (0..N).rev() {
-//                     result *= self.dims[j];
-//                     result += i.values[j];
-//                 }
-//                 return Some(result);
-//             }
-//         }
-//         None
-//     }
-//
-//     fn unindex(&self, mut i: usize) -> Option<Vector<N, I>> {
-//         let mut result = Vector::new([0; N]);
-//         for j in 0..N {
-//             result.values[j] = i % self.dims[j];
-//             i /= self.dims[j];
-//         }
-//
-//         result.try_into().ok()
-//     }
-//
-//     fn is_in_bounds(&self, i: Vector<N, I>) -> bool {
-//         let i: Result<Vector<N, usize>, _> = i.try_into();
-//         if let Ok(i) = i {
-//             i.values.iter().zip(self.dims).all(|(&a, b)| a < b)
-//         } else {
-//             false
-//         }
-//     }
-// }
 
 macro_rules! array_vector_linear_index {
     ($($t:ty),*) => {
@@ -317,6 +278,26 @@ impl<const N: usize, T: Copy> ArrayNd<N, T> {
 //   Draw a plane at Y = 3 in a 3D array
 //   a (: Array3D) .draw_block(&[None, Some(3), None])
 impl<const N: usize, T: Copy> ArrayNd<N, T> {
+    // TODO(lubo): Block iterator!!
+    pub fn iter_block(&mut self, mut matching: [Option<usize>; N]) -> impl Iterator<Item = &T> {
+        todo!();
+        [].into_iter()
+        // let mut index = 0;
+        // for i in (0..N).rev() {
+        //     match matching[i] {
+        //         Some(value) => index += value * self.dim_strides[i],
+        //         None => {
+        //             for a in 0..self.dims[i] {
+        //                 matching[i] = Some(a);
+        //                 // self.draw_block(matching, v);
+        //             }
+        //             // return;
+        //         }
+        //     }
+        // }
+        // // self.set_linear(index, v)
+    }
+
     pub fn draw_block(&mut self, mut matching: [Option<usize>; N], v: T) {
         let mut index = 0;
         for i in (0..N).rev() {
@@ -348,6 +329,13 @@ where
             .collect()
     }
 }
+
+// TODO(lubo): Slices?
+// impl<const C: usize, T: Copy> Display for ArrayNd<C, T> {
+//     pub fn get_slice(&self, ) {
+
+//     }
+// }
 
 impl<const C: usize, T: Display> Display for ArrayNd<C, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
