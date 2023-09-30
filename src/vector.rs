@@ -34,7 +34,7 @@ impl<const C: usize, T: Display> Display for Vector<C, T> {
 }
 
 impl<const C: usize, T> Vector<C, T> {
-    pub fn new(values: [T; C]) -> Self {
+    pub const fn new(values: [T; C]) -> Self {
         Self { values }
     }
 }
@@ -209,7 +209,7 @@ pub struct Scalar<T> {
 }
 
 impl<T> Scalar<T> {
-    pub fn new(value: T) -> Self {
+    pub const fn new(value: T) -> Self {
         Self { value }
     }
 }
@@ -402,7 +402,7 @@ pub type V2usize = V2<usize>;
 // pub type V4f32 = V4<f32>;
 
 impl<T: Copy> V2<T> {
-    pub fn from_xy(x: T, y: T) -> Self {
+    pub const fn from_xy(x: T, y: T) -> Self {
         Self { values: [x, y] }
     }
     pub fn x(&self) -> T {
@@ -452,7 +452,7 @@ macro_rules! movement4directions {
 movement4directions!(V2; usize, i32);
 
 impl<T: Copy> V3<T> {
-    pub fn from_xyz(x: T, y: T, z: T) -> Self {
+    pub const fn from_xyz(x: T, y: T, z: T) -> Self {
         Self { values: [x, y, z] }
     }
     pub fn x(&self) -> T {
@@ -467,7 +467,7 @@ impl<T: Copy> V3<T> {
 }
 
 impl<T: Copy> V4<T> {
-    pub fn from_xyzw(x: T, y: T, z: T, w: T) -> Self {
+    pub const fn from_xyzw(x: T, y: T, z: T, w: T) -> Self {
         Self {
             values: [x, y, z, w],
         }
