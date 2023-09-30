@@ -4,6 +4,8 @@ use std::{
     str::FromStr,
 };
 
+use crate::modular::ModularDecompose;
+
 use super::{
     geometric_traits::{
         EuclideanDistanceSquared, IterateNeighbours, ManhattanDistance, Movement4Directions,
@@ -182,6 +184,23 @@ impl<const C: usize, T: MulAssign + Copy> MulAssign<T> for Vector<C, T> {
         for x in 0..C {
             self.values[x] *= rhs;
         }
+    }
+}
+
+impl<const C: usize, T> ModularDecompose<Vector<C, T>> for Vector<C, T>
+where
+    T: ModularDecompose<T> + Copy,
+{
+    fn modular_decompose(&self, n: Self) -> (Self, Self) {
+        let mut counts = self.values;
+        let mut residues = self.values;
+
+        #[allow(clippy::needless_range_loop)]
+        for x in 0..C {
+            (counts[x], residues[x]) = counts[x].modular_decompose(n.values[x]);
+        }
+
+        (Self::new(counts), Self::new(residues))
     }
 }
 
@@ -469,7 +488,7 @@ impl<T: Copy> V4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::vector::V3;
+    use crate::{vector::{V3, V2}, modular::ModularDecompose};
 
     #[test]
     fn v3_eq() {
@@ -477,5 +496,23 @@ mod tests {
         let b = V3::from_xyz(0, 0, 0);
         assert!(a == b);
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn v3_modular_decompose() {
+        let a = V2::from_xy(0, 0);
+        let size = V2::from_xy(2, 2);
+        let (a_count, a_residue) = a.modular_decompose(size);
+        assert_eq!(V2::from_xy(0, 0), a_count);
+        assert_eq!(V2::from_xy(0, 0), a_residue);
+    }
+
+    #[test]
+    fn v3_modular_decompose2() {
+        let a = V2::from_xy(1, -1);
+        let size = V2::from_xy(2, 2);
+        let (a_count, a_residue) = a.modular_decompose(size);
+        assert_eq!(V2::from_xy(0, -1), a_count);
+        assert_eq!(V2::from_xy(1, 1), a_residue);
     }
 }
