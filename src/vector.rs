@@ -344,6 +344,11 @@ impl<const N: usize> LinearIndex<Self> for Vector<N, $t> {
         Some(result)
     }
 
+    unsafe fn cardinality(&self) -> Option<usize> {
+        let product: $t = self.values.iter().product();
+        Some(product as usize)
+    }
+
     #[allow(unused_comparisons)]
     fn is_in_bounds(&self, i: &Self) -> bool {
         i.values
@@ -488,7 +493,7 @@ impl<T: Copy> V4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vector::{V3, V2}, modular::ModularDecompose};
+    use crate::{vector::{V3, V2}, modular::ModularDecompose, linear_index::LinearIndex};
 
     #[test]
     fn v3_eq() {
@@ -496,6 +501,15 @@ mod tests {
         let b = V3::from_xyz(0, 0, 0);
         assert!(a == b);
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn v3_linear_index() {
+        let bitmap = V2::from_xy(8, 8);
+        let pixel = V2::from_xy(4, 4);
+        let pixel_index = 4*8 + 4;
+        assert_eq!(Some(pixel), bitmap.unindex(pixel_index));
+        assert_eq!(Some(pixel_index), bitmap.index(pixel));
     }
 
     #[test]

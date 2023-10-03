@@ -98,6 +98,9 @@ impl<const N: usize, T> LinearIndex<Vector<N, $t>> for ArrayNd<N, T> {
             None
         }
     }
+    unsafe fn cardinality(&self) -> Option<usize> {
+        Some(self.dims.iter().product())
+    }
     fn is_in_bounds(&self, i: &Vector<N, $t>) -> bool {
         if let Ok(a) = (*i).try_into() {
             Vector::new(self.dims).is_in_bounds(&a)
