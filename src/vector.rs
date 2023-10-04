@@ -418,6 +418,20 @@ impl<T: Copy> V2<T> {
     }
 }
 
+macro_rules! basis_vectors {
+    ($v:ident; $($t:ty),*) => {
+        $(
+        impl $v<$t> {
+            pub const ZERO: Self = V2::from_xy(0, 0);
+            pub const ONE: Self = V2::from_xy(1, 1);
+            pub const X: Self = V2::from_xy(1, 0);
+            pub const Y: Self = V2::from_xy(0, 1);
+        })*
+    };
+}
+
+basis_vectors!(V2; usize, isize, i128, i64, i32, i16, i8, u128, u64, u32, u16, u8);
+
 macro_rules! movement4directions {
     ($v:ident; $($t:ty),*) => {
         $(
@@ -493,7 +507,11 @@ impl<T: Copy> V4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vector::{V3, V2}, modular::ModularDecompose, linear_index::LinearIndex};
+    use crate::{
+        linear_index::LinearIndex,
+        modular::ModularDecompose,
+    };
+    use super::*;
 
     #[test]
     fn v3_eq() {
@@ -504,10 +522,16 @@ mod tests {
     }
 
     #[test]
+    fn v3_basis_vectors() {
+        assert_eq!(V2i32::ONE, V2i32::X + V2i32::Y);
+        assert_eq!(V2i32::X, V2i32::X + V2i32::ZERO);
+    }
+
+    #[test]
     fn v3_linear_index() {
         let bitmap = V2::from_xy(8, 8);
         let pixel = V2::from_xy(4, 4);
-        let pixel_index = 4*8 + 4;
+        let pixel_index = 4 * 8 + 4;
         assert_eq!(Some(pixel), bitmap.unindex(pixel_index));
         assert_eq!(Some(pixel_index), bitmap.index(pixel));
     }
