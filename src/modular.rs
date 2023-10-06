@@ -9,6 +9,9 @@ use super::vector::Vector;
 
 pub trait ModularDecompose<T> {
     fn modular_decompose(&self, n: T) -> (T, T);
+    fn rem_n(&self, n: T) -> T {
+        self.modular_decompose(n).0
+    }
     fn mod_n(&self, n: T) -> T {
         self.modular_decompose(n).1
     }
@@ -33,19 +36,28 @@ pub trait ModularSubAssign {
 macro_rules! modular_primitives {
     ($($t:ty),*) => {$(
         impl ModularDecompose<$t> for $t {
+            // fn modular_decompose(&self, n: $t) -> ($t, $t) {
+            //     let mut value = *self;
+            //     let mut count = 0;
+            //     while value >= n {
+            //         value -= n;
+            //         count += 1;
+            //     }
+            //     #[allow(unused_comparisons)]
+            //     while value < 0 {
+            //         value += n;
+            //         count -= 1;
+            //     }
+            //     (count, value)
+            // }
             fn modular_decompose(&self, n: $t) -> ($t, $t) {
-                let mut value = *self;
-                let mut count = 0;
-                while value >= n {
-                    value -= n;
-                    count += 1;
-                }
-                #[allow(unused_comparisons)]
-                while value < 0 {
-                    value += n;
-                    count -= 1;
-                }
-                (count, value)
+                (self.rem_euclid(n), self.div_euclid(n))
+            }
+            fn rem_n(&self, n: $t) -> $t {
+                self.rem_euclid(n)
+            }
+            fn mod_n(&self, n: $t) -> $t {
+                self.div_euclid(n)
             }
         }
 
