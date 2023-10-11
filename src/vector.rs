@@ -197,7 +197,7 @@ where
 
         #[allow(clippy::needless_range_loop)]
         for x in 0..C {
-            (counts[x], residues[x]) = counts[x].modular_decompose(n.values[x]);
+            (counts[x], residues[x]) = self.values[x].modular_decompose(n.values[x]);
         }
 
         (Self::new(counts), Self::new(residues))
@@ -507,11 +507,8 @@ impl<T: Copy> V4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        linear_index::LinearIndex,
-        modular::ModularDecompose,
-    };
     use super::*;
+    use crate::{linear_index::LinearIndex, modular::ModularDecompose};
 
     #[test]
     fn v3_eq() {
@@ -552,5 +549,14 @@ mod tests {
         let (a_count, a_residue) = a.modular_decompose(size);
         assert_eq!(V2::from_xy(0, -1), a_count);
         assert_eq!(V2::from_xy(1, 1), a_residue);
+    }
+
+    #[test]
+    fn v3_modular_decompose3() {
+        let a = V2::from_xy(-1, 0);
+        let size = V2::from_xy(16, 16);
+        let (a_count, a_residue) = a.modular_decompose(size);
+        assert_eq!(V2::from_xy(-1, 0), a_count);
+        assert_eq!(V2::from_xy(15, 0), a_residue);
     }
 }

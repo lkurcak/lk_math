@@ -9,9 +9,6 @@ use super::vector::Vector;
 
 pub trait ModularDecompose<T> {
     fn modular_decompose(&self, n: T) -> (T, T);
-    fn rem_n(&self, n: T) -> T {
-        self.modular_decompose(n).0
-    }
     fn mod_n(&self, n: T) -> T {
         self.modular_decompose(n).1
     }
@@ -51,13 +48,10 @@ macro_rules! modular_primitives {
             //     (count, value)
             // }
             fn modular_decompose(&self, n: $t) -> ($t, $t) {
-                (self.rem_euclid(n), self.div_euclid(n))
-            }
-            fn rem_n(&self, n: $t) -> $t {
-                self.rem_euclid(n)
+                (self.div_euclid(n), self.rem_euclid(n))
             }
             fn mod_n(&self, n: $t) -> $t {
-                self.div_euclid(n)
+                self.rem_euclid(n)
             }
         }
 
@@ -93,7 +87,7 @@ modular_primitives!(usize, i32);
 
 impl<const C: usize, T: Copy + ModularAdd> ModularAdd for Vector<C, T> {
     fn add_n(&self, rhs: Self, n: Self) -> Self {
-        let mut values = self.values.clone();
+        let mut values = self.values;
         for i in 0..C {
             values[i] = self.values[i].add_n(rhs.values[i], n.values[i]);
         }
@@ -103,7 +97,7 @@ impl<const C: usize, T: Copy + ModularAdd> ModularAdd for Vector<C, T> {
 
 impl<const C: usize, T: Copy + ModularSub> ModularSub for Vector<C, T> {
     fn sub_n(&self, rhs: Self, n: Self) -> Self {
-        let mut values = self.values.clone();
+        let mut values = self.values;
         for i in 0..C {
             values[i] = self.values[i].sub_n(rhs.values[i], n.values[i]);
         }
