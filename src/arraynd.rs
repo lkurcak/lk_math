@@ -12,10 +12,17 @@ use super::{
     vector::Vector,
 };
 
-#[derive(Clone)]
+#[cfg(feature="serde")]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct ArrayNd<const N: usize, T> {
     pub data: Vec<T>,
+    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
     pub dims: [usize; N],
+    // #[serde(with = "serde_arrays")]
+    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
     pub dim_strides: [usize; N],
 }
 
@@ -97,6 +104,9 @@ impl<const N: usize, T> LinearIndex<Vector<N, $t>> for ArrayNd<N, T> {
         } else {
             None
         }
+    }
+    unsafe fn cardinality(&self) -> Option<usize> {
+        Some(self.dims.iter().product())
     }
     fn is_in_bounds(&self, i: &Vector<N, $t>) -> bool {
         if let Ok(a) = (*i).try_into() {

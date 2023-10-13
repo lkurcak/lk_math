@@ -19,6 +19,90 @@ pub struct Vector<const C: usize, T> {
     pub values: [T; C],
 }
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+// https://github.com/serde-rs/serde/issues/1937#issuecomment-812137971
+#[cfg(feature = "serde")]
+mod arrays {
+    use std::{convert::TryInto, marker::PhantomData};
+
+    use serde::{
+        de::{SeqAccess, Visitor},
+        ser::SerializeTuple,
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
+    pub fn serialize<S: Serializer, T: Serialize, const N: usize>(
+        data: &[T; N],
+        ser: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut s = ser.serialize_tuple(N)?;
+        for item in data {
+            s.serialize_element(item)?;
+        }
+        s.end()
+    }
+
+    struct ArrayVisitor<T, const N: usize>(PhantomData<T>);
+
+    impl<'de, T, const N: usize> Visitor<'de> for ArrayVisitor<T, N>
+    where
+        T: Deserialize<'de>,
+    {
+        type Value = [T; N];
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str(&format!("an array of length {}", N))
+        }
+
+        #[inline]
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            // can be optimized using MaybeUninit
+            let mut data = Vec::with_capacity(N);
+            for _ in 0..N {
+                match (seq.next_element())? {
+                    Some(val) => data.push(val),
+                    None => return Err(serde::de::Error::invalid_length(N, &self)),
+                }
+            }
+            match data.try_into() {
+                Ok(arr) => Ok(arr),
+                Err(_) => unreachable!(),
+            }
+        }
+    }
+    pub fn deserialize<'de, D, T, const N: usize>(deserializer: D) -> Result<[T; N], D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        deserializer.deserialize_tuple(N, ArrayVisitor::<T, N>(PhantomData))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<const C: usize, T: Serialize> Serialize for Vector<C, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        arrays::serialize(&self.values, serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, const C: usize, T: Deserialize<'de>> Deserialize<'de> for Vector<C, T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Vector::new(arrays::deserialize(deserializer)?))
+    }
+}
+
 impl<const C: usize, T: Display> Display for Vector<C, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Vector(")?;
@@ -54,7 +138,7 @@ where
         }
         Self::new(result)
     }
-    pub fn aggregate_unary<F: Fn(T, T) -> T>(&self, f: F) -> T {
+    pub fn aggregate<F: Fn(T, T) -> T>(&self, f: F) -> T {
         let mut acc = self.values[0];
         for x in 1..C {
             acc = f(acc, self.values[x]);
@@ -91,7 +175,7 @@ where
 {
     pub fn inner(&self, rhs: Self) -> T {
         self.elementwise_binary(rhs, |a, b| a * b)
-            .aggregate_unary(|acc, x| acc + x)
+            .aggregate(|acc, x| acc + x)
     }
 }
 
@@ -197,7 +281,7 @@ where
 
         #[allow(clippy::needless_range_loop)]
         for x in 0..C {
-            (counts[x], residues[x]) = counts[x].modular_decompose(n.values[x]);
+            (counts[x], residues[x]) = self.values[x].modular_decompose(n.values[x]);
         }
 
         (Self::new(counts), Self::new(residues))
@@ -344,6 +428,11 @@ impl<const N: usize> LinearIndex<Self> for Vector<N, $t> {
         Some(result)
     }
 
+    unsafe fn cardinality(&self) -> Option<usize> {
+        let product: $t = self.values.iter().product();
+        Some(product as usize)
+    }
+
     #[allow(unused_comparisons)]
     fn is_in_bounds(&self, i: &Self) -> bool {
         i.values
@@ -412,6 +501,20 @@ impl<T: Copy> V2<T> {
         self.values[1]
     }
 }
+
+macro_rules! basis_vectors {
+    ($v:ident; $($t:ty),*) => {
+        $(
+        impl $v<$t> {
+            pub const ZERO: Self = V2::from_xy(0, 0);
+            pub const ONE: Self = V2::from_xy(1, 1);
+            pub const X: Self = V2::from_xy(1, 0);
+            pub const Y: Self = V2::from_xy(0, 1);
+        })*
+    };
+}
+
+basis_vectors!(V2; usize, isize, i128, i64, i32, i16, i8, u128, u64, u32, u16, u8);
 
 macro_rules! movement4directions {
     ($v:ident; $($t:ty),*) => {
@@ -488,7 +591,8 @@ impl<T: Copy> V4<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vector::{V3, V2}, modular::ModularDecompose};
+    use super::*;
+    use crate::{linear_index::LinearIndex, modular::ModularDecompose};
 
     #[test]
     fn v3_eq() {
@@ -496,6 +600,21 @@ mod tests {
         let b = V3::from_xyz(0, 0, 0);
         assert!(a == b);
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn v3_basis_vectors() {
+        assert_eq!(V2i32::ONE, V2i32::X + V2i32::Y);
+        assert_eq!(V2i32::X, V2i32::X + V2i32::ZERO);
+    }
+
+    #[test]
+    fn v3_linear_index() {
+        let bitmap = V2::from_xy(8, 8);
+        let pixel = V2::from_xy(4, 4);
+        let pixel_index = 4 * 8 + 4;
+        assert_eq!(Some(pixel), bitmap.unindex(pixel_index));
+        assert_eq!(Some(pixel_index), bitmap.index(pixel));
     }
 
     #[test]
@@ -514,5 +633,14 @@ mod tests {
         let (a_count, a_residue) = a.modular_decompose(size);
         assert_eq!(V2::from_xy(0, -1), a_count);
         assert_eq!(V2::from_xy(1, 1), a_residue);
+    }
+
+    #[test]
+    fn v3_modular_decompose3() {
+        let a = V2::from_xy(-1, 0);
+        let size = V2::from_xy(16, 16);
+        let (a_count, a_residue) = a.modular_decompose(size);
+        assert_eq!(V2::from_xy(-1, 0), a_count);
+        assert_eq!(V2::from_xy(15, 0), a_residue);
     }
 }
