@@ -12,10 +12,17 @@ use super::{
     vector::Vector,
 };
 
-#[derive(Clone)]
+#[cfg(feature="serde")]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct ArrayNd<const N: usize, T> {
     pub data: Vec<T>,
+    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
     pub dims: [usize; N],
+    // #[serde(with = "serde_arrays")]
+    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
     pub dim_strides: [usize; N],
 }
 

@@ -19,6 +19,90 @@ pub struct Vector<const C: usize, T> {
     pub values: [T; C],
 }
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+// https://github.com/serde-rs/serde/issues/1937#issuecomment-812137971
+#[cfg(feature = "serde")]
+mod arrays {
+    use std::{convert::TryInto, marker::PhantomData};
+
+    use serde::{
+        de::{SeqAccess, Visitor},
+        ser::SerializeTuple,
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
+    pub fn serialize<S: Serializer, T: Serialize, const N: usize>(
+        data: &[T; N],
+        ser: S,
+    ) -> Result<S::Ok, S::Error> {
+        let mut s = ser.serialize_tuple(N)?;
+        for item in data {
+            s.serialize_element(item)?;
+        }
+        s.end()
+    }
+
+    struct ArrayVisitor<T, const N: usize>(PhantomData<T>);
+
+    impl<'de, T, const N: usize> Visitor<'de> for ArrayVisitor<T, N>
+    where
+        T: Deserialize<'de>,
+    {
+        type Value = [T; N];
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str(&format!("an array of length {}", N))
+        }
+
+        #[inline]
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            // can be optimized using MaybeUninit
+            let mut data = Vec::with_capacity(N);
+            for _ in 0..N {
+                match (seq.next_element())? {
+                    Some(val) => data.push(val),
+                    None => return Err(serde::de::Error::invalid_length(N, &self)),
+                }
+            }
+            match data.try_into() {
+                Ok(arr) => Ok(arr),
+                Err(_) => unreachable!(),
+            }
+        }
+    }
+    pub fn deserialize<'de, D, T, const N: usize>(deserializer: D) -> Result<[T; N], D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        deserializer.deserialize_tuple(N, ArrayVisitor::<T, N>(PhantomData))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<const C: usize, T: Serialize> Serialize for Vector<C, T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        arrays::serialize(&self.values, serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, const C: usize, T: Deserialize<'de>> Deserialize<'de> for Vector<C, T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Vector::new(arrays::deserialize(deserializer)?))
+    }
+}
+
 impl<const C: usize, T: Display> Display for Vector<C, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Vector(")?;
@@ -54,7 +138,7 @@ where
         }
         Self::new(result)
     }
-    pub fn aggregate_unary<F: Fn(T, T) -> T>(&self, f: F) -> T {
+    pub fn aggregate<F: Fn(T, T) -> T>(&self, f: F) -> T {
         let mut acc = self.values[0];
         for x in 1..C {
             acc = f(acc, self.values[x]);
@@ -91,7 +175,7 @@ where
 {
     pub fn inner(&self, rhs: Self) -> T {
         self.elementwise_binary(rhs, |a, b| a * b)
-            .aggregate_unary(|acc, x| acc + x)
+            .aggregate(|acc, x| acc + x)
     }
 }
 
