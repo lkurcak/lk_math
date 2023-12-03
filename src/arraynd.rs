@@ -121,7 +121,7 @@ impl<const N: usize, T> LinearIndex<Vector<N, $t>> for ArrayNd<N, T> {
     };
 }
 
-array_vector_linear_index!(i32);
+array_vector_linear_index!(i32, usize);
 
 impl<const N: usize, T: Copy + PartialEq> ArrayNd<N, T> {
     pub fn replace_all(&mut self, from: &T, to: &T) {
@@ -174,63 +174,85 @@ impl<const N: usize, T> ArrayNd<N, T> {
             None => false,
         }
     }
+}
 
-    fn find_internal<I>(&self, item: &T) -> Option<I>
+impl<const N: usize, T> ArrayNd<N, T> {
+    fn find_internal<F, I>(&self, predicate: F) -> Option<I>
     where
-        T: PartialEq,
+        F: Fn(&T) -> bool,
         Self: LinearIndex<I>,
     {
-        match self.data.iter().position(|x| x == item) {
+        match self.data.iter().position(predicate) {
             Some(index) => self.unindex(index),
             None => None,
         }
     }
 
-    fn find_last_internal<I>(&self, item: &T) -> Option<I>
+    fn rfind_internal<F, I>(&self, predicate: F) -> Option<I>
     where
-        T: PartialEq,
+        F: Fn(&T) -> bool,
         Self: LinearIndex<I>,
     {
-        match self.data.iter().rev().position(|x| x == item) {
+        match self.data.iter().rposition(predicate) {
             Some(index) => self.unindex(index),
             None => None,
         }
     }
 
-    pub fn find(&self, item: &T) -> Option<Vector<N, i32>>
+    fn find_item_internal<I>(&self, item: &T) -> Option<I>
+    where
+        T: PartialEq,
+        Self: LinearIndex<I>,
+    {
+        self.find_internal(|x| x == item)
+    }
+
+    fn rfind_item_internal<I>(&self, item: &T) -> Option<I>
+    where
+        T: PartialEq,
+        Self: LinearIndex<I>,
+    {
+        self.rfind_internal(|x| x == item)
+    }
+
+    pub fn find_item(&self, item: &T) -> Option<Vector<N, i32>>
     where
         T: PartialEq,
     {
-        self.find_internal(item)
+        self.find_item_internal(item)
     }
 
-    pub fn find_last(&self, item: &T) -> Option<Vector<N, i32>>
+    pub fn find_last_item(&self, item: &T) -> Option<Vector<N, i32>>
     where
         T: PartialEq,
     {
-        self.find_last_internal(item)
+        self.rfind_item_internal(item)
     }
 
-    pub fn find_all<I>(&self, item: &T) -> Vec<I>
+    pub fn find_all<F, I>(&self, predicate: F) -> Vec<I>
     where
+        F: Fn(&T) -> bool,
         T: PartialEq,
         Self: LinearIndex<I>,
     {
         self.data
             .iter()
             .enumerate()
-            .filter(|(_, x)| x == &item)
+            .filter(|(_, x)| predicate(x))
             .map(|(i, _)| self.unindex(i).unwrap())
             .collect()
     }
 
-    // pub fn find_all(&self, item: &T) -> Vec<Vector<N, i32>>
-    // where
-    //     T: PartialEq,
-    // {
-    //     self.find_all_internal(item)
-    // }
+    pub fn find_all_items<I>(&self, item: &T) -> Vec<I>
+    where
+        T: PartialEq,
+        Self: LinearIndex<I>,
+    {
+        self.find_all(|x| x == item)
+    }
+}
 
+impl<const N: usize, T> ArrayNd<N, T> {
     pub fn map<F, U>(&self, f: F) -> ArrayNd<N, U>
     where
         F: Fn(&T) -> U,
@@ -355,7 +377,8 @@ impl<const C: usize, T: Display> Display for ArrayNd<C, T> {
             let mut index = 0;
             while index < total_size {
                 if C > 2 {
-                    writeln!(f, "Slice = {}", self.unindex(index).unwrap())?;
+                    let slice: Vector<C, usize> = self.unindex(index).unwrap();
+                    writeln!(f, "Slice = {}", slice)?;
                 }
 
                 for _y in 0..self.dims[1] {
