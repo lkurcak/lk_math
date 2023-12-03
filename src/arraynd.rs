@@ -2,6 +2,7 @@ use std::{
     fmt::Display,
     io::{BufRead, BufReader},
     iter,
+    str::FromStr,
 };
 
 use super::{
@@ -12,17 +13,17 @@ use super::{
     vector::Vector,
 };
 
-#[cfg(feature="serde")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ArrayNd<const N: usize, T> {
     pub data: Vec<T>,
-    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
+    #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
     pub dims: [usize; N],
     // #[serde(with = "serde_arrays")]
-    #[cfg_attr(feature="serde", serde(with = "serde_arrays"))]
+    #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
     pub dim_strides: [usize; N],
 }
 
@@ -399,19 +400,74 @@ impl<T> Array3d<T> {
     }
 }
 
-impl Array2d<char> {
-    pub fn from_buffer<R: std::io::Read>(reader: BufReader<R>) -> Self {
-        let lines: Vec<_> = reader.lines().map(|x| x.unwrap()).collect();
-        let height = lines.len();
-        let width = lines.iter().map(|x| x.len()).max().unwrap();
-        assert!(lines.iter().all(|x| x.len() == width));
-        let data = lines.concat().chars().collect();
+pub type CharArray2d = Array2d<char>;
 
-        Self {
-            data,
-            dims: [width, height],
-            dim_strides: [1, width],
+impl FromStr for CharArray2d {
+    type Err = CharArrayParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let cursor = std::io::Cursor::new(s);
+        Self::from_read(cursor)
+    }
+}
+
+#[derive(Debug)]
+pub enum CharArrayParseError {
+    InconsistentLineWidth(usize, usize, usize, usize),
+    Io(std::io::Error),
+}
+
+impl Display for CharArrayParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CharArrayParseError::InconsistentLineWidth(l1, w1, l2, w2) => write!(f, "Inconsistent line width. On line {l1} the width is {w1}, while on line {l2} the width is {w2}."),
+            CharArrayParseError::Io(io) => write!(f, "IO error: {io}"),
         }
+    }
+}
+
+impl CharArray2d {
+    pub fn from_buffer<R: std::io::Read>(
+        reader: BufReader<R>,
+    ) -> Result<Self, CharArrayParseError> {
+        let mut array2d_width_line_number = 0;
+        let mut array2d_width = 0;
+
+        let mut data = vec![];
+        let mut height = 0;
+
+        for (line_number, line) in reader.lines().enumerate() {
+            let line = match line {
+                Ok(l) => l,
+                Err(e) => return Err(CharArrayParseError::Io(e)),
+            };
+            let line_width = line.len();
+            if array2d_width == 0 {
+                array2d_width = line_width;
+                array2d_width_line_number = line_number;
+            } else if array2d_width != line_width && line_width != 0 {
+                return Err(CharArrayParseError::InconsistentLineWidth(
+                    array2d_width_line_number,
+                    array2d_width,
+                    line_number,
+                    line_width,
+                ));
+            }
+            if line_width > 0 {
+                height += 1;
+                data.extend(line.chars());
+            }
+        }
+
+        Ok(Self {
+            data,
+            dims: [array2d_width, height],
+            dim_strides: [1, array2d_width],
+        })
+    }
+
+    pub fn from_read<R: std::io::Read>(reader: R) -> Result<Self, CharArrayParseError> {
+        Self::from_buffer(BufReader::new(reader))
     }
 }
 
@@ -440,6 +496,53 @@ impl<T: Copy> Array3d<T> {
             data: iter::repeat(default).take(width * height * depth).collect(),
             dims: [width, height, depth],
             dim_strides: [1, width, width * height],
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::vector::V2i32;
+
+    use super::*;
+
+    const EXAMPLE: &str = r#"
+467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..
+"#;
+
+    #[test]
+    fn parse_chararray2d() {
+        let map: CharArray2d = EXAMPLE.parse().unwrap();
+        assert_eq!(10, map.width());
+        assert_eq!(10, map.height());
+        assert_eq!(Some(&'4'), map.get(V2i32::from_xy(0, 0)));
+    }
+
+    #[test]
+    fn fail_parse_chararray2d_inconsistent_line_width() {
+        let bad = r#"
+line 1
+line 2
+line 3+
+"#;
+        if let Err(CharArrayParseError::InconsistentLineWidth(l1, w1, l2, w2)) =
+            bad.parse::<CharArray2d>()
+        {
+            assert!((1..=2).contains(&l1));
+            assert_eq!(w1, 6);
+            assert_eq!(l2, 3);
+            assert_eq!(w2, 7);
+        } else {
+            panic!();
         }
     }
 }
