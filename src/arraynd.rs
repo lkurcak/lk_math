@@ -2,6 +2,7 @@ use std::{
     fmt::Display,
     io::{BufRead, BufReader},
     iter,
+    ops::{Index, IndexMut},
     str::FromStr,
 };
 
@@ -25,6 +26,67 @@ pub struct ArrayNd<const N: usize, T> {
     // #[serde(with = "serde_arrays")]
     #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
     pub dim_strides: [usize; N],
+}
+
+impl<const C: usize, T: Copy> IntoIterator for ArrayNd<C, T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.into_iter()
+    }
+}
+
+impl<'a, const C: usize, T: Copy> IntoIterator for &'a ArrayNd<C, T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
+    }
+}
+
+impl<'a, const C: usize, T: Copy> ArrayNd<C, T> {
+    pub fn iter(&'a self) -> std::slice::Iter<'a, T> {
+        self.into_iter()
+    }
+}
+
+impl<'a, const C: usize, T: Copy> IntoIterator for &'a mut ArrayNd<C, T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter_mut()
+    }
+}
+
+impl<'a, const C: usize, T: Copy> ArrayNd<C, T> {
+    pub fn iter_mut(&'a mut self) -> std::slice::IterMut<'a, T> {
+        self.into_iter()
+    }
+}
+
+impl<const C: usize, T: Copy> Index<usize> for ArrayNd<C, T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+impl<const C: usize, T: Copy> IndexMut<usize> for ArrayNd<C, T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+
+impl<const C: usize, T: Copy> Index<Vector<C, i32>> for ArrayNd<C, T> {
+    type Output = T;
+
+    fn index(&self, index: Vector<C, i32>) -> &Self::Output {
+        &self.data[self.index_unchecked(index).unwrap()]
+    }
 }
 
 impl<const C: usize, T: Copy> ArrayNd<C, T> {
@@ -86,6 +148,29 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
         new_dims.iter_mut().for_each(|x| *x += 2 * padding as usize);
 
         self.resized(new_dims, default, Vector::all(padding))
+    }
+}
+
+impl<const N: usize, T> LinearIndex<usize> for ArrayNd<N, T> {
+    fn index_unchecked(&self, i: usize) -> Option<usize> {
+        if i < self.data.len() {
+            Some(i)
+        } else {
+            None
+        }
+    }
+    fn unindex(&self, i: usize) -> Option<usize> {
+        if i < self.data.len() {
+            Some(i)
+        } else {
+            None
+        }
+    }
+    unsafe fn cardinality(&self) -> Option<usize> {
+        Some(self.data.len())
+    }
+    fn is_in_bounds(&self, i: &usize) -> bool {
+        *i < self.data.len()
     }
 }
 

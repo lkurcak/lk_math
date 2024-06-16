@@ -25,6 +25,7 @@ where
 pub trait Movement4Directions
 where
     Self: std::marker::Sized,
+    Self: Clone,
 {
     // fn right() -> Option<Self>;
     // fn up() -> Option<Self>;
@@ -35,6 +36,35 @@ where
     fn step_up(&self) -> Option<Self>;
     fn step_left(&self) -> Option<Self>;
     fn step_down(&self) -> Option<Self>;
+
+    fn step_right_n(&self, n: usize) -> Option<Self> {
+        let mut result: Self = self.clone();
+        for _ in 0..n {
+            result = result.step_right()?;
+        }
+        Some(result)
+    }
+    fn step_up_n(&self, n: usize) -> Option<Self> {
+        let mut result: Self = self.clone();
+        for _ in 0..n {
+            result = result.step_up()?;
+        }
+        Some(result)
+    }
+    fn step_left_n(&self, n: usize) -> Option<Self> {
+        let mut result: Self = self.clone();
+        for _ in 0..n {
+            result = result.step_left()?;
+        }
+        Some(result)
+    }
+    fn step_down_n(&self, n: usize) -> Option<Self> {
+        let mut result: Self = self.clone();
+        for _ in 0..n {
+            result = result.step_down()?;
+        }
+        Some(result)
+    }
 }
 
 // // NOTE(lubo): With no context, we can move as far as the range of the underlying type allows us.
