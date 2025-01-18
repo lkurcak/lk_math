@@ -27,8 +27,8 @@ pub trait Interval
 where
     Self: Sized,
 {
-    fn interval_intersection(&self, other: &Self) -> Option<Self>;
-    fn interval_union(&self, other: &Self) -> Option<Self>;
+    fn intersection(&self, other: &Self) -> Option<Self>;
+    fn union(&self, other: &Self) -> Option<Self>;
     fn overlaps(&self, other: &Self) -> bool;
     fn touches(&self, other: &Self) -> bool;
     fn dominates(&self, other: &Self) -> bool;
@@ -81,7 +81,7 @@ impl<T> Interval for std::ops::Range<T>
 where
     T: Copy + Ord,
 {
-    fn interval_intersection(&self, other: &Self) -> Option<Self> {
+    fn intersection(&self, other: &Self) -> Option<Self> {
         let (mut a0, mut a1) = self.halfopen_bounds();
         let (mut b0, mut b1) = other.halfopen_bounds();
 
@@ -91,8 +91,8 @@ where
         }
 
         // NOTE(lubo): Current policy is to return None
-        // a1 < b0 to get Some(a..a)
-        // a1 <= b0 to get None
+        // 1. use `a1 < b0` to get `Some(a..a)`
+        // 2. use `a1 <= b0` to get `None`
         if a1 <= b0 {
             None
         } else {
@@ -100,7 +100,7 @@ where
         }
     }
 
-    fn interval_union(&self, other: &Self) -> Option<Self> {
+    fn union(&self, other: &Self) -> Option<Self> {
         let (mut a0, mut a1) = self.halfopen_bounds();
         let (mut b0, mut b1) = other.halfopen_bounds();
 
@@ -135,6 +135,40 @@ where
     }
 }
 
+pub trait UniversalInterval: Sized {
+    const INFINUM: Self;
+    const SUPREMUM: Self;
+
+    fn is_infinum(&self) -> bool;
+    fn is_supremum(&self) -> bool;
+
+    fn universal_interval() -> std::ops::Range<Self> {
+        Self::INFINUM..Self::SUPREMUM
+    }
+}
+
+macro_rules! impl_universal_interval {
+    ($inf:ident, $sup:ident; $($t:ty),*) => {
+        $(
+            impl UniversalInterval for $t {
+                const INFINUM: Self = <$t>::$inf;
+                const SUPREMUM: Self = <$t>::$sup;
+
+                fn is_infinum(&self) -> bool {
+                    *self == Self::INFINUM
+                }
+
+                fn is_supremum(&self) -> bool {
+                    *self == Self::SUPREMUM
+                }
+            }
+        )*
+    };
+}
+
+impl_universal_interval!(MIN, MAX; i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+impl_universal_interval!(NEG_INFINITY, INFINITY; f32, f64, crate::ord_float::OrdF32, crate::ord_float::OrdF64);
+
 pub trait IntervalExt
 where
     Self: Sized,
@@ -159,13 +193,13 @@ mod tests {
     use crate::interval::{Interval, IntervalExt};
 
     #[test]
-    fn interval_overlap_abab() {
+    fn abab() {
         let a = 0..2;
         let b = 1..3;
-        assert_eq!(a.interval_union(&b), Some(0..3));
-        assert_eq!(b.interval_union(&a), Some(0..3));
-        assert_eq!(a.interval_intersection(&b), Some(1..2));
-        assert_eq!(b.interval_intersection(&a), Some(1..2));
+        assert_eq!(a.union(&b), Some(0..3));
+        assert_eq!(b.union(&a), Some(0..3));
+        assert_eq!(a.intersection(&b), Some(1..2));
+        assert_eq!(b.intersection(&a), Some(1..2));
         assert!(a.overlaps(&b));
         assert!(a.touches(&b));
         assert!(!a.dominates(&b));
@@ -174,15 +208,18 @@ mod tests {
         assert!(b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(!b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
     #[test]
-    fn interval_overlap_abba() {
+    fn abba() {
         let a = 0..3;
         let b = 1..2;
-        assert_eq!(a.interval_union(&b), Some(0..3));
-        assert_eq!(b.interval_union(&a), Some(0..3));
-        assert_eq!(a.interval_intersection(&b), Some(1..2));
-        assert_eq!(b.interval_intersection(&a), Some(1..2));
+        assert_eq!(a.union(&b), Some(0..3));
+        assert_eq!(b.union(&a), Some(0..3));
+        assert_eq!(a.intersection(&b), Some(1..2));
+        assert_eq!(b.intersection(&a), Some(1..2));
         assert!(a.overlaps(&b));
         assert!(a.touches(&b));
         assert!(a.dominates(&b));
@@ -191,15 +228,18 @@ mod tests {
         assert!(b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
     #[test]
-    fn interval_overlap_aabb() {
+    fn aabb() {
         let a = 0..1;
         let b = 2..3;
-        assert_eq!(a.interval_union(&b), None);
-        assert_eq!(b.interval_union(&a), None);
-        assert_eq!(a.interval_intersection(&b), None);
-        assert_eq!(b.interval_intersection(&a), None);
+        assert_eq!(a.union(&b), None);
+        assert_eq!(b.union(&a), None);
+        assert_eq!(a.intersection(&b), None);
+        assert_eq!(b.intersection(&a), None);
         assert!(!a.overlaps(&b));
         assert!(!a.touches(&b));
         assert!(!a.dominates(&b));
@@ -208,15 +248,18 @@ mod tests {
         assert!(!b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(!b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
     #[test]
-    fn interval_overlap_abx() {
+    fn abx() {
         let a = 0..2;
         let b = 1..2;
-        assert_eq!(a.interval_union(&b), Some(0..2));
-        assert_eq!(b.interval_union(&a), Some(0..2));
-        assert_eq!(a.interval_intersection(&b), Some(1..2));
-        assert_eq!(b.interval_intersection(&a), Some(1..2));
+        assert_eq!(a.union(&b), Some(0..2));
+        assert_eq!(b.union(&a), Some(0..2));
+        assert_eq!(a.intersection(&b), Some(1..2));
+        assert_eq!(b.intersection(&a), Some(1..2));
         assert!(a.overlaps(&b));
         assert!(a.touches(&b));
         assert!(a.dominates(&b));
@@ -225,15 +268,18 @@ mod tests {
         assert!(b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
     #[test]
-    fn interval_overlap_xab() {
+    fn xab() {
         let a = 0..3;
         let b = 0..2;
-        assert_eq!(a.interval_union(&b), Some(0..3));
-        assert_eq!(b.interval_union(&a), Some(0..3));
-        assert_eq!(a.interval_intersection(&b), Some(0..2));
-        assert_eq!(b.interval_intersection(&a), Some(0..2));
+        assert_eq!(a.union(&b), Some(0..3));
+        assert_eq!(b.union(&a), Some(0..3));
+        assert_eq!(a.intersection(&b), Some(0..2));
+        assert_eq!(b.intersection(&a), Some(0..2));
         assert!(a.overlaps(&b));
         assert!(a.touches(&b));
         assert!(a.dominates(&b));
@@ -242,16 +288,19 @@ mod tests {
         assert!(b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
     #[test]
-    fn interval_overlap_axb() {
+    fn axb() {
         let a = 0..2;
         let b = 2..3;
-        assert_eq!(a.interval_union(&b), Some(0..3));
-        assert_eq!(b.interval_union(&a), Some(0..3));
+        assert_eq!(a.union(&b), Some(0..3));
+        assert_eq!(b.union(&a), Some(0..3));
 
-        assert_eq!(a.interval_intersection(&b), None);
-        assert_eq!(b.interval_intersection(&a), None);
+        assert_eq!(a.intersection(&b), None);
+        assert_eq!(b.intersection(&a), None);
         // assert_eq!(a.interval_intersection(&b), Some(2..2));
         // assert_eq!(b.interval_intersection(&a), Some(2..2));
         // assert!(a.interval_intersection(&b).is_none() || a.interval_intersection(&b) == Some(2..2));
@@ -265,5 +314,8 @@ mod tests {
         assert!(b.touches(&a));
         assert!(!b.dominates(&a));
         assert!(!b.dominates_or_is_dominated_by(&a));
+
+        assert_eq!(a.overlaps(&b), a.intersection(&b).is_some());
+        assert_eq!(b.overlaps(&a), b.intersection(&a).is_some());
     }
 }
