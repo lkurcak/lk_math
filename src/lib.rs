@@ -20,6 +20,7 @@ pub mod permutations;
 pub mod sketch;
 pub mod transformations;
 pub mod vector;
+pub mod ord_float;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

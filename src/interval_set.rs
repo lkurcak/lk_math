@@ -5,6 +5,13 @@ use std::{
 
 use super::interval::{ExclusiveMax, InclusiveMin, Interval};
 
+/// Disjoint set of intervals.
+///
+/// `T` must implement `Copy` and `Ord`.
+///
+/// Because of the `Ord` constraint, floating point types are not supported.
+/// This can be worked around by creating a wrapper type that implements `Ord`.
+/// Wrappers `OrdF32` and `OrdF64` are provided in the `ord_float` module.
 #[derive(Debug)]
 pub struct IntervalSet<T> {
     pub intervals: Vec<std::ops::Range<T>>,
@@ -131,5 +138,43 @@ impl<T: Copy + Add<Output = T> + Sub<Output = T> + Sum> IntervalSet<T> {
         }
 
         Self { intervals: negated }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        interval_set::IntervalSet,
+        ord_float::{OrdF32, OrdF64},
+    };
+
+    #[test]
+    fn i32() {
+        let a = 0..2;
+        let b = 1..3;
+        let mut set = IntervalSet::new();
+        set.union(a);
+        set.union(b);
+        assert_eq!(set.measure(), 3);
+    }
+
+    #[test]
+    fn f32() {
+        let a = OrdF32(0.0)..OrdF32(2.0);
+        let b = OrdF32(1.0)..OrdF32(3.0);
+        let mut set = IntervalSet::new();
+        set.union(a);
+        set.union(b);
+        assert_eq!(*set.measure(), 3.0);
+    }
+
+    #[test]
+    fn f64() {
+        let a = OrdF64(0.0)..OrdF64(2.0);
+        let b = OrdF64(1.0)..OrdF64(3.0);
+        let mut set = IntervalSet::new();
+        set.union(a);
+        set.union(b);
+        assert_eq!(*set.measure(), 3.0);
     }
 }
