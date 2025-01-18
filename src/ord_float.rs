@@ -42,6 +42,9 @@ macro_rules! create_ord_float {
         }
 
         impl $wrapper {
+            pub const INFINITY: Self = Self(<$inner>::INFINITY);
+            pub const NEG_INFINITY: Self = Self(<$inner>::NEG_INFINITY);
+
             fn bits(&self) -> $inner_bits {
                 self.0.to_bits() as $inner_bits
             }
