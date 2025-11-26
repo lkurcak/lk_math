@@ -195,6 +195,7 @@ impl<const N: usize, T> LinearIndex<Vector<N, $t>> for ArrayNd<N, T> {
         Some(self.dims.iter().product())
     }
     fn is_in_bounds(&self, i: &Vector<N, $t>) -> bool {
+        #[allow(irrefutable_let_patterns)]
         if let Ok(a) = (*i).try_into() {
             Vector::new(self.dims).is_in_bounds(&a)
         } else {
