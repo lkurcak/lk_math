@@ -1,7 +1,7 @@
 use std::ops::Mul;
 
 #[derive(Debug, PartialEq, Eq)]
-struct Perm<const M: usize>([usize; M]);
+pub struct Perm<const M: usize>([usize; M]);
 
 impl<const M: usize> Perm<M> {
     fn chain(&self, other: &Self) -> Self

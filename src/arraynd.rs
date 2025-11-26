@@ -1,7 +1,6 @@
 use std::{
     fmt::Display,
     io::{BufRead, BufReader},
-    iter,
     ops::{Index, IndexMut},
     str::FromStr,
 };
@@ -102,7 +101,7 @@ impl<const C: usize, T: Copy> ArrayNd<C, T> {
         }
 
         Self {
-            data: iter::repeat(default).take(d.iter().product()).collect(),
+            data: std::iter::repeat_n(default, d.iter().product()).collect(),
             dims: d,
             dim_strides,
         }
@@ -195,6 +194,7 @@ impl<const N: usize, T> LinearIndex<Vector<N, $t>> for ArrayNd<N, T> {
         Some(self.dims.iter().product())
     }
     fn is_in_bounds(&self, i: &Vector<N, $t>) -> bool {
+        #[allow(irrefutable_let_patterns)]
         if let Ok(a) = (*i).try_into() {
             Vector::new(self.dims).is_in_bounds(&a)
         } else {
@@ -397,24 +397,24 @@ impl<const N: usize, T: Copy> ArrayNd<N, T> {
 //   a (: Array3D) .draw_block(&[None, Some(3), None])
 impl<const N: usize, T: Copy> ArrayNd<N, T> {
     // TODO(lubo): Block iterator!!
-    pub fn iter_block(&mut self, mut matching: [Option<usize>; N]) -> impl Iterator<Item = &T> {
-        todo!();
-        [].into_iter()
-        // let mut index = 0;
-        // for i in (0..N).rev() {
-        //     match matching[i] {
-        //         Some(value) => index += value * self.dim_strides[i],
-        //         None => {
-        //             for a in 0..self.dims[i] {
-        //                 matching[i] = Some(a);
-        //                 // self.draw_block(matching, v);
-        //             }
-        //             // return;
-        //         }
-        //     }
-        // }
-        // // self.set_linear(index, v)
-    }
+    // pub fn iter_block(&mut self, _matching: [Option<usize>; N]) -> impl Iterator<Item = &T> {
+    //     todo!();
+    //     [].into_iter()
+    //     // let mut index = 0;
+    //     // for i in (0..N).rev() {
+    //     //     match matching[i] {
+    //     //         Some(value) => index += value * self.dim_strides[i],
+    //     //         None => {
+    //     //             for a in 0..self.dims[i] {
+    //     //                 matching[i] = Some(a);
+    //     //                 // self.draw_block(matching, v);
+    //     //             }
+    //     //             // return;
+    //     //         }
+    //     //     }
+    //     // }
+    //     // // self.set_linear(index, v)
+    // }
 
     pub fn draw_block(&mut self, mut matching: [Option<usize>; N], v: T) {
         let mut index = 0;
@@ -582,7 +582,7 @@ impl CharArray2d {
 impl<T: Copy> Array2d<T> {
     pub fn with_dimensions(width: usize, height: usize, default: T) -> Self {
         Self {
-            data: iter::repeat(default).take(width * height).collect(),
+            data: std::iter::repeat_n(default, width * height).collect(),
             dims: [width, height],
             dim_strides: [1, width],
         }
@@ -590,18 +590,15 @@ impl<T: Copy> Array2d<T> {
 
     pub fn shift_n_rows_down(&mut self, n: usize, default: T) {
         self.data.drain(..self.width() * n);
-        self.data.extend(
-            iter::repeat(default)
-                .take(self.width() * n)
-                .collect::<Vec<T>>(),
-        );
+        self.data
+            .extend(std::iter::repeat_n(default, self.width() * n).collect::<Vec<T>>());
     }
 }
 
 impl<T: Copy> Array3d<T> {
     pub fn with_dimensions(width: usize, height: usize, depth: usize, default: T) -> Self {
         Self {
-            data: iter::repeat(default).take(width * height * depth).collect(),
+            data: std::iter::repeat_n(default, width * height * depth).collect(),
             dims: [width, height, depth],
             dim_strides: [1, width, width * height],
         }

@@ -36,9 +36,9 @@ mod arrays {
     use std::{convert::TryInto, marker::PhantomData};
 
     use serde::{
+        Deserialize, Deserializer, Serialize, Serializer,
         de::{SeqAccess, Visitor},
         ser::SerializeTuple,
-        Deserialize, Deserializer, Serialize, Serializer,
     };
     pub fn serialize<S: Serializer, T: Serialize, const N: usize>(
         data: &[T; N],
@@ -141,6 +141,7 @@ where
 
     pub fn elementwise_unary<F: Fn(T) -> T>(&self, f: F) -> Self {
         let mut result = self.values;
+        #[allow(clippy::needless_range_loop)]
         for x in 0..C {
             result[x] = f(result[x]);
         }
@@ -155,6 +156,7 @@ where
     }
     pub fn elementwise_binary<F: Fn(T, T) -> T>(&self, rhs: Self, f: F) -> Self {
         let mut result = self.values;
+        #[allow(clippy::needless_range_loop)]
         for x in 0..C {
             result[x] = f(result[x], rhs.values[x]);
         }
@@ -383,6 +385,7 @@ macro_rules! vector_from {
 }
 macro_rules! vector_try_from {
     ($t:ty; $($u:ty),*) => {$(
+        #[allow(clippy::infallible_try_from)]
         impl<const C: usize> TryFrom<Vector<C, $u>> for Vector<C, $t> {
             type Error = <$t as std::convert::TryFrom<$u>>::Error;
 
@@ -453,7 +456,9 @@ impl<const N: usize> LinearIndex<Self> for Vector<N, $t> {
     };
 }
 
-vector_linear_index!(usize, isize, i128, i64, i32, i16, i8, u128, u64, u32, u16, u8);
+vector_linear_index!(
+    usize, isize, i128, i64, i32, i16, i8, u128, u64, u32, u16, u8
+);
 
 macro_rules! movement4directions {
     ($($t:ty),*) => {

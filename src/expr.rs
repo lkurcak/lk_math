@@ -76,13 +76,17 @@ where
                 let b_val = b.eval(vals);
 
                 // result = a + b
-                if a_val.is_ok() && b_val.is_err() {
-                    let b_val = result - a_val.unwrap();
-                    assert_eq!(result, a_val.unwrap() + b_val);
+                if let Ok(a_val) = a_val
+                    && b_val.is_err()
+                {
+                    let b_val = result - a_val;
+                    assert_eq!(result, a_val + b_val);
                     b.solve_internal(None, b_val, vals, forced);
-                } else if a_val.is_err() && b_val.is_ok() {
-                    let a_val = result - b_val.unwrap();
-                    assert_eq!(result, a_val + b_val.unwrap());
+                } else if a_val.is_err()
+                    && let Ok(b_val) = b_val
+                {
+                    let a_val = result - b_val;
+                    assert_eq!(result, a_val + b_val);
                     a.solve_internal(None, a_val, vals, forced);
                 } else {
                     panic!();
@@ -93,13 +97,17 @@ where
                 let b_val = b.eval(vals);
 
                 // result = a - b
-                if a_val.is_ok() && b_val.is_err() {
-                    let b_val = a_val.unwrap() - result;
-                    assert_eq!(result, a_val.unwrap() - b_val);
+                if let Ok(a_val) = a_val
+                    && b_val.is_err()
+                {
+                    let b_val = a_val - result;
+                    assert_eq!(result, a_val - b_val);
                     b.solve_internal(None, b_val, vals, forced);
-                } else if a_val.is_err() && b_val.is_ok() {
-                    let a_val = result + b_val.unwrap();
-                    assert_eq!(result, a_val - b_val.unwrap());
+                } else if a_val.is_err()
+                    && let Ok(b_val) = b_val
+                {
+                    let a_val = result + b_val;
+                    assert_eq!(result, a_val - b_val);
                     a.solve_internal(None, a_val, vals, forced);
                 } else {
                     panic!();
@@ -110,13 +118,17 @@ where
                 let b_val = b.eval(vals);
 
                 // result = a * b
-                if a_val.is_ok() && b_val.is_err() {
-                    let b_val = result / a_val.unwrap();
-                    assert_eq!(result, a_val.unwrap() * b_val);
+                if let Ok(a_val) = a_val
+                    && b_val.is_err()
+                {
+                    let b_val = result / a_val;
+                    assert_eq!(result, a_val * b_val);
                     b.solve_internal(None, b_val, vals, forced);
-                } else if a_val.is_err() && b_val.is_ok() {
-                    let a_val = result / b_val.unwrap();
-                    assert_eq!(result, a_val * b_val.unwrap());
+                } else if a_val.is_err()
+                    && let Ok(b_val) = b_val
+                {
+                    let a_val = result / b_val;
+                    assert_eq!(result, a_val * b_val);
                     a.solve_internal(None, a_val, vals, forced);
                 } else {
                     panic!();
@@ -127,13 +139,17 @@ where
                 let b_val = b.eval(vals);
 
                 // result = a / b
-                if a_val.is_ok() && b_val.is_err() {
-                    let b_val = a_val.unwrap() / result;
-                    assert_eq!(result, a_val.unwrap() / b_val);
+                if let Ok(a_val) = a_val
+                    && b_val.is_err()
+                {
+                    let b_val = a_val / result;
+                    assert_eq!(result, a_val / b_val);
                     b.solve_internal(None, b_val, vals, forced);
-                } else if a_val.is_err() && b_val.is_ok() {
-                    let a_val = result * b_val.unwrap();
-                    assert_eq!(result, a_val / b_val.unwrap());
+                } else if a_val.is_err()
+                    && let Ok(b_val) = b_val
+                {
+                    let a_val = result * b_val;
+                    assert_eq!(result, a_val / b_val);
                     a.solve_internal(None, a_val, vals, forced);
                 } else {
                     panic!();

@@ -88,6 +88,7 @@ modular_primitives!(usize, i32);
 impl<const C: usize, T: Copy + ModularAdd> ModularAdd for Vector<C, T> {
     fn add_n(&self, rhs: Self, n: Self) -> Self {
         let mut values = self.values;
+        #[allow(clippy::needless_range_loop)]
         for i in 0..C {
             values[i] = self.values[i].add_n(rhs.values[i], n.values[i]);
         }
@@ -98,6 +99,7 @@ impl<const C: usize, T: Copy + ModularAdd> ModularAdd for Vector<C, T> {
 impl<const C: usize, T: Copy + ModularSub> ModularSub for Vector<C, T> {
     fn sub_n(&self, rhs: Self, n: Self) -> Self {
         let mut values = self.values;
+        #[allow(clippy::needless_range_loop)]
         for i in 0..C {
             values[i] = self.values[i].sub_n(rhs.values[i], n.values[i]);
         }

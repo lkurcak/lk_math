@@ -228,10 +228,10 @@ where
                 let k = n.get_key();
                 let v = n.get_value();
 
-                if let Some(&old_v) = data.get(&k) {
-                    if P::compare_values(&k, &v, &old_v) == Some(Ordering::Less) {
-                        return false;
-                    }
+                if let Some(&old_v) = data.get(&k)
+                    && P::compare_values(&k, &v, &old_v) == Some(Ordering::Less)
+                {
+                    return false;
                 }
 
                 filter_neighbours(p, n, context, extra_data)

@@ -16,11 +16,11 @@ pub mod line_iterator;
 pub mod linear_index;
 pub mod math;
 pub mod modular;
+pub mod ord_float;
 pub mod permutations;
 pub mod sketch;
 pub mod transformations;
 pub mod vector;
-pub mod ord_float;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
