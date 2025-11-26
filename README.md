@@ -1,3 +1,5 @@
+![Crates.io Version](https://img.shields.io/crates/v/lk_math)
+
 # lk_math
 Collection of reusable mathematical tools.
 
@@ -12,4 +14,5 @@ I would be very happy for anyone to try this library, just have the understandin
 ## License
 
 `SPDX-License-Identifier: MIT OR Apache-2.0`
+
 
